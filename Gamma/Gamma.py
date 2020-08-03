@@ -17,13 +17,6 @@ except:
     pip_install('pymedphys --no-deps')
     from pymedphys._gamma.implementation import gamma_shell
 
-try:
-    from npgamma import calc_gamma
-except:
-    from slicer.util import pip_install
-    pip_install('npgamma')
-    from npgamma import calc_gamma
-
 #
 # Gamma
 #
@@ -183,12 +176,19 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         coords2 = (xgrid, ygrid, zgrid)
         ## Gamma index parameters
         distance_threshold = imageThreshold[0]
+
+        gamma_options = {
+            'dose_percent_threshold': dose_threshold,
+            'distance_mm_threshold': distance_threshold,
+            'lower_percent_dose_cutoff': lower_dose_cutoff,
+            'interp_fraction': distance_step_size,  # Should be 10 or more for more accurate results
+            'max_gamma': 2,
+            'random_subset': None,
+            'local_gamma': True,
+            'ram_available': 2**29  # 1/2 GB
+        }
         
-        gamma_const = gamma_shell(coords1, im1, coords2, im2,
-            distance_mm_threshold=distance_threshold, dose_percent_threshold=dose_threshold,
-            lower_percent_dose_cutoff=lower_dose_cutoff, 
-            interp_fraction=distance_step_size,
-            max_gamma=10, local_gamma=True)
+        gamma_const = gamma_shell(coords1, im1, coords2, im2, **gamma_options)
         valid_gamma_const = np.ma.masked_invalid(gamma_const)
         valid_gamma_const = valid_gamma_const[~valid_gamma_const.mask]
     #     valid_gamma_const[valid_gamma_const > 2] = 2
@@ -197,42 +197,15 @@ class GammaLogic(ScriptedLoadableModuleLogic):
             size=1
         return np.sum(valid_gamma_const <= 1) / size, gamma_const
 
-    def GammaIndex2(self, im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff):
-        shape = np.shape(im1)
-        xcoord = np.arange(0.0, shape[0]*imageThreshold[0], imageThreshold[0])
-        ycoord = np.arange(0.0, shape[1]*imageThreshold[1], imageThreshold[1])
-        zcoord = np.arange(0.0, shape[2]*imageThreshold[2], imageThreshold[2]) 
-        coords = (xcoord, ycoord, zcoord)
-        distance_threshold = imageThreshold[0]
-        distance_step_size = distance_threshold / distance_step_size
-        max_concurrent_calc_points = 30000000
-        num_threads = 4
-        dose_threshold = dose_threshold * np.max(im1)
-
-        gamma_const = calc_gamma(coords, im1, coords, im2,
-                  distance_threshold, dose_threshold,
-                  lower_dose_cutoff=lower_dose_cutoff, 
-                  distance_step_size=distance_step_size,
-                  maximum_test_distance=np.inf,
-                  max_concurrent_calc_points=max_concurrent_calc_points,
-                  num_threads=num_threads)
-
-        valid_gamma_const = np.ma.masked_invalid(gamma_const)
-        valid_gamma_const = valid_gamma_const[~valid_gamma_const.mask]
-    #     valid_gamma_const[valid_gamma_const > 2] = 2
-        size = len(valid_gamma_const)
-        if size<1:
-            size=1
-        return np.sum(valid_gamma_const <= 1) / size, gamma_const
-
-
-    def run(self, inputVolume1, inputVolume2, outputVolume, distance_step_size=10, dose_threshold=0.02, lower_dose_cutoff=0.2):
+    def run(self, inputVolume1, inputVolume2, outputVolume, distance_step_size=10, dose_threshold=1, lower_dose_cutoff=20):
         im1 = slicer.util.arrayFromVolume(inputVolume1).astype(float)
         im2 = slicer.util.arrayFromVolume(inputVolume2).astype(float)
         GammaImage = self.cloneNode(inputVolume1, outputVolume.GetName())
         imageThreshold = inputVolume1.GetSpacing()
         GammaIndex, GammaMatrix = self.GammaIndex(im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff)
+        logging.info(f"Testing: {np.nansum(GammaMatrix)}")
         slicer.util.updateVolumeFromArray(GammaImage, GammaMatrix)
+        logging.info(f"Gamma Index: {GammaIndex}")
 
 
 
