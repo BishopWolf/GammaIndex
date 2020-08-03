@@ -206,9 +206,13 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         logging.info(f"Testing: {np.nansum(GammaMatrix)}")
         slicer.util.updateVolumeFromArray(GammaImage, GammaMatrix)
         logging.info(f"Gamma Index: {GammaIndex}")
+        displayNode = GammaImage.GetScalarVolumeDisplayNode()
 
-
-
+        if displayNode is not None:
+            colorID = slicer.util.getFirstNodeByName("DivergingBlueRed").GetID()
+            displayNode.SetAndObserveColorNodeID(colorID)
+            displayNode.AutoWindowLevelOff()
+            displayNode.AutoWindowLevelOn()
 #
 # GammaTest
 #
