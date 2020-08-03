@@ -8,13 +8,14 @@ import slicer
 from slicer.ScriptedLoadableModule import *
 
 import numpy as np
-# try:
-#     from pymedphys.gamma import gamma_shell as calc_gamma
-# except:
-#     from slicer.util import pip_install
-#     pip_install('cython')
-#     pip_install('pymedphys')
-#     from pymedphys.gamma import gamma_shell as calc_gamma
+
+try:
+    # from pymedphys.gamma import gamma_shell as calc_gamma
+    from pymedphys._gamma.implementation import gamma_shell
+except:
+    from slicer.util import pip_install
+    pip_install('pymedphys --no-deps')
+    from pymedphys._gamma.implementation import gamma_shell
 
 try:
     from npgamma import calc_gamma
@@ -173,15 +174,17 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         shape = np.shape(im1)
         xgrid = np.linspace(1,shape[0]*imageThreshold[0],shape[0])
         ygrid = np.linspace(1,shape[1]*imageThreshold[1],shape[1])
-        coords1 = (xgrid, ygrid)
+        zgrid = np.linspace(1,shape[2]*imageThreshold[2],shape[2])
+        coords1 = (xgrid, ygrid, zgrid)
         shape = np.shape(im2)
         xgrid = np.linspace(1,shape[0]*imageThreshold[0],shape[0])
         ygrid = np.linspace(1,shape[1]*imageThreshold[1],shape[1])
-        coords2 = (xgrid, ygrid)
+        zgrid = np.linspace(1,shape[2]*imageThreshold[2],shape[2])
+        coords2 = (xgrid, ygrid, zgrid)
         ## Gamma index parameters
         distance_threshold = imageThreshold[0]
         
-        gamma_const = calc_gamma(coords1, im1, coords2, im2,
+        gamma_const = gamma_shell(coords1, im1, coords2, im2,
             distance_mm_threshold=distance_threshold, dose_percent_threshold=dose_threshold,
             lower_percent_dose_cutoff=lower_dose_cutoff, 
             interp_fraction=distance_step_size,
@@ -228,7 +231,7 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         im2 = slicer.util.arrayFromVolume(inputVolume2).astype(float)
         GammaImage = self.cloneNode(inputVolume1, outputVolume.GetName())
         imageThreshold = inputVolume1.GetSpacing()
-        GammaIndex, GammaMatrix = self.GammaIndex2(im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff)
+        GammaIndex, GammaMatrix = self.GammaIndex(im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff)
         slicer.util.updateVolumeFromArray(GammaImage, GammaMatrix)
 
 
