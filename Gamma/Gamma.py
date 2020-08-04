@@ -11,11 +11,18 @@ import numpy as np
 
 try:
     # from pymedphys.gamma import gamma_shell as calc_gamma
-    from pymedphys._gamma.implementation import gamma_shell
+    from pymedphys import gamma
 except:
     from slicer.util import pip_install
     pip_install('pymedphys --no-deps')
-    from pymedphys._gamma.implementation import gamma_shell
+    from pymedphys import gamma
+
+try:
+  import skimage.metrics as compare
+except:
+    from slicer.util import pip_install
+    pip_install('skimage')
+    import skimage.metrics as compare
 
 #
 # Gamma
@@ -69,6 +76,28 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         ParameterLayout.addWidget(ParametersWidget)
         ParametersFormLayout = qt.QFormLayout(ParametersWidget)
 
+        # distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=20
+        self.distanceThreshold = qt.QLineEdit()
+        self.distanceThreshold.setText(1)
+        self.interpolationFactor = qt.QLineEdit()
+        self.interpolationFactor.setText(10)
+        self.doseThreshold = qt.QLineEdit()
+        self.doseThreshold.setText(1)
+        self.lowerDoseCutoff = qt.QLineEdit()
+        self.lowerDoseCutoff.setText(1)
+        ParametersFormLayout.addRow("Distance Threshold (mm)", self.distanceThreshold)
+        ParametersFormLayout.addRow("Interpolation Factor", self.interpolationFactor)
+        ParametersFormLayout.addRow("Dose Threshold (%)", self.doseThreshold)
+        ParametersFormLayout.addRow("Lower Dose Cutoff (%)", self.lowerDoseCutoff)
+
+        InputCollapsibleButton = ctk.ctkCollapsibleButton()
+        InputCollapsibleButton.text = "Input Volumes"
+        self.layout.addWidget(InputCollapsibleButton)
+        InputLayout = qt.QHBoxLayout(InputCollapsibleButton)
+        InputWidget = qt.QWidget()
+        InputLayout.addWidget(InputWidget)
+        InputFormLayout = qt.QFormLayout(InputWidget)
+
         # input volume selector
         self.Image1 = slicer.qMRMLNodeComboBox()
         self.Image1.nodeTypes = ["vtkMRMLScalarVolumeNode"]
@@ -80,7 +109,7 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         self.Image1.showChildNodeTypes = False
         self.Image1.setMRMLScene(slicer.mrmlScene)
         self.Image1.setToolTip("Select ADR Image 1.")
-        ParametersFormLayout.addRow(
+        InputFormLayout.addRow(
             "ADR Image 1: ", self.Image1)
 
         # input volume selector
@@ -94,27 +123,12 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         self.Image2.showChildNodeTypes = False
         self.Image2.setMRMLScene(slicer.mrmlScene)
         self.Image2.setToolTip("Select ADR Image 1.")
-        ParametersFormLayout.addRow(
+        InputFormLayout.addRow(
             "ADR Image 2: ", self.Image2)
-
-        # output volume selector
-        self.Image3 = slicer.qMRMLNodeComboBox()
-        self.Image3.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-        self.Image3.selectNodeUponCreation = True
-        self.Image3.addEnabled = True
-        self.Image3.removeEnabled = True
-        self.Image3.noneEnabled = True
-        self.Image3.showHidden = False
-        self.Image3.showChildNodeTypes = False
-        self.Image3.setMRMLScene(slicer.mrmlScene)
-        self.Image3.setToolTip("Gamma Image.")
-        ParametersFormLayout.addRow(
-            "Gamma Image: ", self.Image3)
-
 
         self.ApplyButton = qt.QPushButton("Calculate Gamma")
         self.ApplyButton.toolTip = "Calculates Gamma image."
-        ParametersFormLayout.addRow(self.ApplyButton)
+        InputFormLayout.addRow(self.ApplyButton)
 
         self.ApplyButton.clicked.connect(self.onApplyButton)
 
@@ -131,7 +145,18 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         """
         Run processing when user clicks "Apply" button.
         """
-        self.logic.run(self.Image1.currentNode(), self.Image2.currentNode(), self.Image3.currentNode())
+        distance_threshold = int(float(self.distanceThreshold.text))
+        interp_fraction = int(float(self.interpolationFactor.text))
+        dose_threshold = int(float(self.doseThreshold.text))
+        lower_dose_cutoff = int(float(self.lowerDoseCutoff.text))
+        self.logic.run(
+            inputVolume1=self.Image1.currentNode(), 
+            inputVolume2=self.Image2.currentNode(),
+            distance_threshold=distance_threshold, 
+            interp_fraction=interp_fraction, 
+            dose_threshold=dose_threshold, 
+            lower_dose_cutoff=lower_dose_cutoff
+        )
 
 
 #
@@ -163,7 +188,31 @@ class GammaLogic(ScriptedLoadableModuleLogic):
 
         return clonedNode
 
-    def GammaIndex(self, im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff):
+    def showTable(self, table):
+        """
+        Switch to a layout where tables are visible and show the selected table
+        """
+        layoutManager = slicer.app.layoutManager()
+        currentLayout = layoutManager.layout
+        layoutWithTable = slicer.modules.tables.logic().GetLayoutWithTable(currentLayout)
+        layoutManager.setLayout(layoutWithTable)
+        appLogic = slicer.app.applicationLogic()
+        appLogic.GetSelectionNode().SetActiveTableID(table.GetID())
+        appLogic.PropagateTableSelection()
+
+
+    def skimage_metrics(self, im1, im2):
+        ## Metric 1: MSE (Mean Squared Error)
+        mse = compare.mean_squared_error(im1, im2)
+        ## Metric 1.1: NRMSE (Normalized Root Mean Squared Error)
+        nrmse = compare.normalized_root_mse(im1, im2)
+        ## Metric 2: SSIM (Structural Similarity Image Matrix)
+        ssim = compare.structural_similarity(im1, im2, data_range= im2.max() - im2.min())
+        ## Metric 3: Peak Signal-to-Noise ratio
+        psnr = compare.peak_signal_noise_ratio(im1, im2, data_range= im2.max() - im2.min())
+        return mse, nrmse, ssim, psnr
+
+    def GammaIndex(self, im1, im2, imageThreshold, distance_threshold, interp_fraction, dose_threshold, lower_dose_cutoff):
         shape = np.shape(im1)
         xgrid = np.linspace(1,shape[0]*imageThreshold[0],shape[0])
         ygrid = np.linspace(1,shape[1]*imageThreshold[1],shape[1])
@@ -175,37 +224,41 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         zgrid = np.linspace(1,shape[2]*imageThreshold[2],shape[2])
         coords2 = (xgrid, ygrid, zgrid)
         ## Gamma index parameters
-        distance_threshold = imageThreshold[0]
-
         gamma_options = {
             'dose_percent_threshold': dose_threshold,
             'distance_mm_threshold': distance_threshold,
             'lower_percent_dose_cutoff': lower_dose_cutoff,
-            'interp_fraction': distance_step_size,  # Should be 10 or more for more accurate results
+            'interp_fraction': interp_fraction,  # Should be 10 or more for more accurate results
             'max_gamma': 2,
             'random_subset': None,
-            'local_gamma': True,
+            'local_gamma': False,
             'ram_available': 2**29  # 1/2 GB
         }
         
-        gamma_const = gamma_shell(coords1, im1, coords2, im2, **gamma_options)
+        gamma_const = gamma(coords1, im1, coords2, im2, **gamma_options)
         valid_gamma_const = np.ma.masked_invalid(gamma_const)
         valid_gamma_const = valid_gamma_const[~valid_gamma_const.mask]
-    #     valid_gamma_const[valid_gamma_const > 2] = 2
         size = len(valid_gamma_const)
         if size<1:
             size=1
-        return np.sum(valid_gamma_const <= 1) / size, gamma_const
+        gamma_index = np.sum(valid_gamma_const <= 1) / size
+        return gamma_index, gamma_const
 
-    def run(self, inputVolume1, inputVolume2, outputVolume, distance_step_size=10, dose_threshold=1, lower_dose_cutoff=20):
+    def run(self, inputVolume1, inputVolume2, distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=20):
         im1 = slicer.util.arrayFromVolume(inputVolume1).astype(float)
         im2 = slicer.util.arrayFromVolume(inputVolume2).astype(float)
-        GammaImage = self.cloneNode(inputVolume1, outputVolume.GetName())
+        GammaImage = self.cloneNode(inputVolume1, "Gamma Image")
         imageThreshold = inputVolume1.GetSpacing()
-        GammaIndex, GammaMatrix = self.GammaIndex(im1, im2, imageThreshold, distance_step_size, dose_threshold, lower_dose_cutoff)
-        logging.info(f"Testing: {np.nansum(GammaMatrix)}")
+        GammaIndex, GammaMatrix = self.GammaIndex(im1, im2, imageThreshold, distance_threshold, interp_fraction, dose_threshold, lower_dose_cutoff)
         slicer.util.updateVolumeFromArray(GammaImage, GammaMatrix)
-        logging.info(f"Gamma Index: {GammaIndex}")
+        mse_const, nrmse_const, ssim_const, psnr_const = self.skimage_metrics(im1, im2)
+        TableValues={
+            "Gamma Index": GammaIndex, 
+            "Mean Square Error": mse_const, 
+            "Normalized Mean square Error": nrmse_const, 
+            "Structural similarity": ssim_const, 
+            "Peak signal to noise ratio": psnr_const
+        }
         displayNode = GammaImage.GetScalarVolumeDisplayNode()
 
         if displayNode is not None:
@@ -213,6 +266,50 @@ class GammaLogic(ScriptedLoadableModuleLogic):
             displayNode.SetAndObserveColorNodeID(colorID)
             displayNode.AutoWindowLevelOff()
             displayNode.AutoWindowLevelOn()
+
+        TableNodes = slicer.util.getNodesByClass('vtkMRMLTableNode')
+        name = f'T:TABL Comparison'
+        for node in TableNodes:
+            if name == node.GetName():  # Table exists, erase it
+                slicer.mrmlScene.RemoveNode(node)
+        
+        # prepare clean table
+        resultsTableNode = slicer.mrmlScene.AddNewNodeByClass(
+            'vtkMRMLTableNode')
+        resultsTableNode.RemoveAllColumns()
+        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+        nodeID = shNode.GetItemByDataNode(inputVolume1)
+        folderID = shNode.GetItemParent(nodeID)
+        shNode.CreateItem(folderID, resultsTableNode)
+        resultsTableNode.SetName(name)
+        table = resultsTableNode.GetTable()
+
+        segmentColumnValue = vtk.vtkStringArray()
+        segmentColumnValue.SetName("Metric")
+        table.AddColumn(segmentColumnValue)
+
+        segmentColumnValue = vtk.vtkStringArray()
+        segmentColumnValue.SetName("Value")
+        table.AddColumn(segmentColumnValue)
+
+        table.SetNumberOfRows(len(TableValues.keys()))
+
+        for i, (metric, value) in enumerate(TableValues.items()):
+            table.SetValue(i, 0, metric)
+            table.SetValue(i, 1, value)
+
+        resultsTableNode.Modified()
+        self.showTable(resultsTableNode)
+
+        backgroundID = inputVolume1.GetID()
+        foregroundID = GammaImage.GetID()
+
+        slicer.util.setSliceViewerLayers(
+            background=str(backgroundID), 
+            foreground=str(foregroundID),   
+            foregroundOpacity=0.5
+        )
+
 #
 # GammaTest
 #
