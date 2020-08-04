@@ -14,6 +14,7 @@ try:
     from pymedphys import gamma
 except:
     from slicer.util import pip_install
+    pip_install('dataclasses')
     pip_install('pymedphys --no-deps')
     from pymedphys import gamma
 
@@ -77,14 +78,33 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         ParametersFormLayout = qt.QFormLayout(ParametersWidget)
 
         # distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=20
-        self.distanceThreshold = qt.QLineEdit()
-        self.distanceThreshold.setText(1)
-        self.interpolationFactor = qt.QLineEdit()
-        self.interpolationFactor.setText(10)
-        self.doseThreshold = qt.QLineEdit()
-        self.doseThreshold.setText(1)
-        self.lowerDoseCutoff = qt.QLineEdit()
-        self.lowerDoseCutoff.setText(1)
+        self.distanceThreshold = qt.QDoubleSpinBox()
+        self.distanceThreshold.setDecimals(1)
+        self.distanceThreshold.setMinimum(0)
+        self.distanceThreshold.setMaximum(10)
+        self.distanceThreshold.value = 1
+        self.distanceThreshold.setToolTip("This is the distance (mm) to do gamma comparisons")
+
+        self.interpolationFactor = qt.QSpinBox()
+        self.interpolationFactor.setMinimum(1)
+        self.interpolationFactor.setMaximum(30)
+        self.interpolationFactor.value=10
+        self.interpolationFactor.setToolTip("This is the factor to divide the grid for interpolations")
+
+        self.doseThreshold = qt.QDoubleSpinBox()
+        self.doseThreshold.setDecimals(1)
+        self.doseThreshold.setMinimum(0.1)
+        self.doseThreshold.setMaximum(10)
+        self.doseThreshold.value = 1
+        self.doseThreshold.setToolTip("This is the dose threshold (%) to accept the gamma comparison")
+
+        self.lowerDoseCutoff = qt.QDoubleSpinBox()
+        self.lowerDoseCutoff.setDecimals(1)
+        self.lowerDoseCutoff.setMinimum(0.1)
+        self.lowerDoseCutoff.setMaximum(10)
+        self.lowerDoseCutoff.value = 1
+        self.lowerDoseCutoff.setToolTip("This is the dose cutoff (%) to reject dose values")
+
         ParametersFormLayout.addRow("Distance Threshold (mm)", self.distanceThreshold)
         ParametersFormLayout.addRow("Interpolation Factor", self.interpolationFactor)
         ParametersFormLayout.addRow("Dose Threshold (%)", self.doseThreshold)
@@ -145,10 +165,10 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         """
         Run processing when user clicks "Apply" button.
         """
-        distance_threshold = int(float(self.distanceThreshold.text))
-        interp_fraction = int(float(self.interpolationFactor.text))
-        dose_threshold = int(float(self.doseThreshold.text))
-        lower_dose_cutoff = int(float(self.lowerDoseCutoff.text))
+        distance_threshold = self.distanceThreshold.value
+        interp_fraction = self.interpolationFactor.value
+        dose_threshold = self.doseThreshold.value
+        lower_dose_cutoff = self.lowerDoseCutoff.value
         self.logic.run(
             inputVolume1=self.Image1.currentNode(), 
             inputVolume2=self.Image2.currentNode(),
