@@ -390,6 +390,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         self.setUp()
         self.test_Gamma1()
         self.setUp()
+        slicer.app.aboutToQuit.connect(self.myCleanup)
 
     def test_Gamma1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
