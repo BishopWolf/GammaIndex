@@ -25,3 +25,9 @@ add_subdirectory(Gamma)
 #-----------------------------------------------------------------------------
 include(${Slicer_EXTENSION_GENERATE_CONFIG})
 include(${Slicer_EXTENSION_CPACK})
+
+#-----------------------------------------------------------------------------
+option(ENABLE_TESTS "Enable tests" OFF)
+if (${ENABLE_TESTS})
+    enable_testing()
+endif()

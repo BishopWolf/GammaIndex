@@ -14,8 +14,9 @@ try:
     from pymedphys import gamma
 except:
     from slicer.util import pip_install
-    pip_install('dataclasses')
-    pip_install('pymedphys --no-deps')
+    #pip_install('dataclasses')
+    #pip_install('pymedphys --no-deps')
+    pip_install('pymedphys')
     from pymedphys import gamma
 
 try:
@@ -52,6 +53,25 @@ This is an example of scripted loadable module bundled in an extension.
         self.parent.acknowledgementText = """
 
 """  # TODO: replace with organization, grant and thanks.
+
+    def runTest(self, msec=100, **kwargs):
+        """
+        :param msec: delay to associate with :func:`ScriptedLoadableModuleTest.delayDisplay()`.
+        """
+        # test GammaTest
+        # name of the test case class is expected to be <ModuleName>Test
+        module = importlib.import_module(self.__module__)
+        className = self.moduleName + 'Test'
+        try:
+            TestCaseClass = getattr(module, className)
+        except AttributeError:
+            # Treat missing test case class as a failure; provide useful error message
+            raise AssertionError(
+                f'Test case class not found: {self.__module__}.{className} ')
+
+        testCase = TestCaseClass()
+        testCase.messageDelay = msec
+        testCase.runTest(**kwargs)
 
 #
 # GammaWidget
