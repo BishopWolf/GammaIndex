@@ -426,9 +426,9 @@ class GammaTest(ScriptedLoadableModuleTest):
 
         # Test algorithm 
         values = logic.run(inputVolume, inputVolume, distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=1)
+        logging.info("%s", values)
         OutputNode = slicer.util.getFirstNodeByClassByName(
             'vtkMRMLScalarVolumeNode', 'Gamma Image')
-        logging.info("%s", values)
 
         self.assertEqual(values["Gamma Index"], 1)
         self.assertEqual(values["Normalized Root MSE (%)"], 0)
