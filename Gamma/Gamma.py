@@ -402,7 +402,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         """
 
         self.delayDisplay("Starting the test")
-        slicer.app.aboutToQuit.connect(self.myCleanup)
+        slicer.app.aboutToQuit.connect(self.setUp)
 
         # Get/create input data
 
