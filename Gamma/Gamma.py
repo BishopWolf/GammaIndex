@@ -382,12 +382,14 @@ class GammaTest(ScriptedLoadableModuleTest):
         """ Do whatever is needed to reset the state - typically a scene clear will be enough.
         """
         slicer.mrmlScene.Clear(0)
+        slicer.app.processEvents()
 
     def runTest(self):
         """Run as few or as many tests as needed here.
         """
         self.setUp()
         self.test_Gamma1()
+        self.setUp()
 
     def test_Gamma1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
@@ -424,6 +426,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         values = logic.run(inputVolume, inputVolume, distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=1)
         OutputNode = slicer.util.getFirstNodeByClassByName(
             'vtkMRMLScalarVolumeNode', 'Gamma Image')
+        logging.info(str(values))
 
         self.assertEqual(values["Gamma Index"], 1)
         self.assertEqual(values["Normalized Root MSE (%)"], 0)
