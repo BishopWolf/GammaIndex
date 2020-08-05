@@ -1,0 +1,14 @@
+image: unnmdnwb3/slicer3d-nightly:0.7.0
+
+build-and-test:
+  stage: test
+  needs: []
+  variables:
+    DISPLAY: ":99.0"
+  script:
+    - mkdir $CI_BUILDS_DIR/gamma-build && cd $CI_BUILDS_DIR/gamma-build
+    - cmake -DSlicer_DIR:PATH=/usr/src/Slicer-build/Slicer-build -DBUILDNAME:STRING=gamma $CI_PROJECT_DIR -DCMAKE_BUILD_TYPE:STRING=Testing -DENABLE_TESTS:BOOL=ON
+    - make
+    - Xvfb :99 -screen 0 1024x768x24 &> xvfb.log &
+    - cd $CI_BUILDS_DIR/gamma-build
+    - ctest -V

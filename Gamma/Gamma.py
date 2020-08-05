@@ -330,9 +330,25 @@ class GammaLogic(ScriptedLoadableModuleLogic):
             foregroundOpacity=0.5
         )
 
+        return TableValues  # for testing
+
 #
 # GammaTest
 #
+
+def hasImageData(volumeNode):
+    """
+    This is an example logic method that
+    returns true if the passed in volume
+    node has valid image data
+    """
+    if not volumeNode:
+        logger.info(f"{utils.whoami()} failed: no volume node")
+        return False
+    if volumeNode.GetImageData() is None:
+        logger.info(f"{utils.whoami()} failed: no image data in volume node")
+        return False
+    return True
 
 
 class GammaTest(ScriptedLoadableModuleTest):
@@ -381,24 +397,18 @@ class GammaTest(ScriptedLoadableModuleTest):
         self.assertEqual(inputScalarRange[0], 0)
         self.assertEqual(inputScalarRange[1], 279)
 
-        outputVolume = slicer.mrmlScene.AddNewNodeByClass(
-            "vtkMRMLScalarVolumeNode")
-        threshold = 50
-
         # Test the module logic
-
         logic = GammaLogic()
 
-        # Test algorithm with non-inverted threshold
-        logic.run(inputVolume, outputVolume, threshold, True)
-        outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-        self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-        self.assertEqual(outputScalarRange[1], threshold)
+        # Test algorithm 
+        values = logic.run(inputVolume, inputVolume)
+        OutputNode = slicer.util.getFirstNodeByClassByName(
+            'vtkMRMLScalarVolumeNode', 'Gamma Image')
 
-        # Test algorithm with inverted threshold
-        logic.run(inputVolume, outputVolume, threshold, False)
-        outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-        self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-        self.assertEqual(outputScalarRange[1], inputScalarRange[1])
+        self.assertEqual(values["Gamma Index"], 1)
+        self.assertEqual(values["Normalized Root MSE (%)"], 0)
+        self.assertEqual(values["Structural Similarity Index"], 1)
+        self.assertTrue(hasImageData(OutputNode))
 
         self.delayDisplay('Test passed')
+
