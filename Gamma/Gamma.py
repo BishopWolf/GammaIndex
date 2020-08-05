@@ -22,7 +22,7 @@ try:
   import skimage.metrics as compare
 except:
     from slicer.util import pip_install
-    pip_install('skimage')
+    pip_install('scikit-image')
     import skimage.metrics as compare
 
 #
@@ -274,10 +274,10 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         mse_const, nrmse_const, ssim_const, psnr_const = self.skimage_metrics(im1, im2)
         TableValues={
             "Gamma Index": GammaIndex, 
-            "Mean Square Error": mse_const, 
-            "Normalized Mean square Error": nrmse_const, 
-            "Structural similarity": ssim_const, 
-            "Peak signal to noise ratio": psnr_const
+            "Mean Square Error (MSE)": mse_const, 
+            "Normalized Root MSE (%)": nrmse_const, 
+            "Structural Similarity Index": ssim_const, 
+            "Peak Signal to Noise Ratio": psnr_const
         }
         displayNode = GammaImage.GetScalarVolumeDisplayNode()
 
