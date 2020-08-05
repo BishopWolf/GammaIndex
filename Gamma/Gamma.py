@@ -14,7 +14,6 @@ try:
     from pymedphys import gamma
 except:
     from slicer.util import pip_install
-    #pip_install('dataclasses')
     #pip_install('pymedphys --no-deps')
     pip_install('pymedphys')
     from pymedphys import gamma
@@ -388,9 +387,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         """Run as few or as many tests as needed here.
         """
         self.setUp()
-        self.test_Gamma1()
-        self.setUp()
-        slicer.app.aboutToQuit.connect(self.myCleanup)
+        self.test_Gamma1()        
 
     def test_Gamma1(self):
         """ Ideally you should have several levels of tests.  At the lowest level
@@ -405,6 +402,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         """
 
         self.delayDisplay("Starting the test")
+        slicer.app.aboutToQuit.connect(self.myCleanup)
 
         # Get/create input data
 
