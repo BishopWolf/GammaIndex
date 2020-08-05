@@ -421,7 +421,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         logic = GammaLogic()
 
         # Test algorithm 
-        values = logic.run(inputVolume, inputVolume)
+        values = logic.run(inputVolume, inputVolume, distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=1)
         OutputNode = slicer.util.getFirstNodeByClassByName(
             'vtkMRMLScalarVolumeNode', 'Gamma Image')
 
