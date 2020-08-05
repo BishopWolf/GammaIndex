@@ -228,6 +228,17 @@ class GammaLogic(ScriptedLoadableModuleLogic):
 
         return clonedNode
 
+    def checkTesting(self):
+        try:
+            mainWindow = slicer.util.mainWindow()
+            if mainWindow is not None:
+                layoutManager = slicer.app.layoutManager()
+                if layoutManager is not None:
+                    return False
+            return True
+        except:
+            return True
+
     def showTable(self, table):
         """
         Switch to a layout where tables are visible and show the selected table
@@ -303,55 +314,58 @@ class GammaLogic(ScriptedLoadableModuleLogic):
             "Structural Similarity Index": ssim_const, 
             "Peak Signal to Noise Ratio": psnr_const
         }
-        displayNode = GammaImage.GetScalarVolumeDisplayNode()
 
-        if displayNode is not None:
-            colorID = slicer.util.getFirstNodeByName("DivergingBlueRed").GetID()
-            displayNode.SetAndObserveColorNodeID(colorID)
-            displayNode.AutoWindowLevelOff()
-            displayNode.AutoWindowLevelOn()
+        if not self.checkTesting():
 
-        TableNodes = slicer.util.getNodesByClass('vtkMRMLTableNode')
-        name = f'T:TABL Comparison'
-        for node in TableNodes:
-            if name == node.GetName():  # Table exists, erase it
-                slicer.mrmlScene.RemoveNode(node)
-        
-        # prepare clean table
-        resultsTableNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTableNode')
-        resultsTableNode.RemoveAllColumns()
-        shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-        nodeID = shNode.GetItemByDataNode(inputVolume1)
-        folderID = shNode.GetItemParent(nodeID)
-        shNode.CreateItem(folderID, resultsTableNode)
-        resultsTableNode.SetName(name)
-        table = resultsTableNode.GetTable()
+            displayNode = GammaImage.GetScalarVolumeDisplayNode()
 
-        segmentColumnValue = vtk.vtkStringArray()
-        segmentColumnValue.SetName("Metric")
-        table.AddColumn(segmentColumnValue)
+            if displayNode is not None:
+                colorID = slicer.util.getFirstNodeByName("DivergingBlueRed").GetID()
+                displayNode.SetAndObserveColorNodeID(colorID)
+                displayNode.AutoWindowLevelOff()
+                displayNode.AutoWindowLevelOn()
 
-        segmentColumnValue = vtk.vtkStringArray()
-        segmentColumnValue.SetName("Value")
-        table.AddColumn(segmentColumnValue)
+            TableNodes = slicer.util.getNodesByClass('vtkMRMLTableNode')
+            name = f'T:TABL Comparison'
+            for node in TableNodes:
+                if name == node.GetName():  # Table exists, erase it
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # prepare clean table
+            resultsTableNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTableNode')
+            resultsTableNode.RemoveAllColumns()
+            shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+            nodeID = shNode.GetItemByDataNode(inputVolume1)
+            folderID = shNode.GetItemParent(nodeID)
+            shNode.CreateItem(folderID, resultsTableNode)
+            resultsTableNode.SetName(name)
+            table = resultsTableNode.GetTable()
 
-        table.SetNumberOfRows(len(TableValues.keys()))
+            segmentColumnValue = vtk.vtkStringArray()
+            segmentColumnValue.SetName("Metric")
+            table.AddColumn(segmentColumnValue)
 
-        for i, (metric, value) in enumerate(TableValues.items()):
-            table.SetValue(i, 0, metric)
-            table.SetValue(i, 1, value)
+            segmentColumnValue = vtk.vtkStringArray()
+            segmentColumnValue.SetName("Value")
+            table.AddColumn(segmentColumnValue)
 
-        resultsTableNode.Modified()
-        self.showTable(resultsTableNode)
+            table.SetNumberOfRows(len(TableValues.keys()))
 
-        backgroundID = inputVolume1.GetID()
-        foregroundID = GammaImage.GetID()
+            for i, (metric, value) in enumerate(TableValues.items()):
+                table.SetValue(i, 0, metric)
+                table.SetValue(i, 1, value)
 
-        slicer.util.setSliceViewerLayers(
-            background=str(backgroundID), 
-            foreground=str(foregroundID),   
-            foregroundOpacity=0.5
-        )
+            resultsTableNode.Modified()
+            self.showTable(resultsTableNode)
+
+            backgroundID = inputVolume1.GetID()
+            foregroundID = GammaImage.GetID()
+
+            slicer.util.setSliceViewerLayers(
+                background=str(backgroundID), 
+                foreground=str(foregroundID),   
+                foregroundOpacity=0.5
+            )
 
         return TableValues  # for testing
 
