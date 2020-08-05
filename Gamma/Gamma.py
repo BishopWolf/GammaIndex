@@ -242,13 +242,26 @@ class GammaLogic(ScriptedLoadableModuleLogic):
 
     def skimage_metrics(self, im1, im2):
         ## Metric 1: MSE (Mean Squared Error)
-        mse = compare.mean_squared_error(im1, im2)
+        try:
+            mse = compare.mean_squared_error(im1, im2)
+        except Exception as e:
+            print(e)
         ## Metric 1.1: NRMSE (Normalized Root Mean Squared Error)
-        nrmse = compare.normalized_root_mse(im1, im2)
+        try:
+            nrmse = compare.normalized_root_mse(im1, im2)
+        except Exception as e:
+            print(e)
         ## Metric 2: SSIM (Structural Similarity Image Matrix)
-        ssim = compare.structural_similarity(im1, im2, data_range= im2.max() - im2.min())
+        try:
+            ssim = compare.structural_similarity(im1, im2, data_range= im2.max() - im2.min())
+        except Exception as e:
+            print(e)
         ## Metric 3: Peak Signal-to-Noise ratio
-        psnr = compare.peak_signal_noise_ratio(im1, im2, data_range= im2.max() - im2.min())
+        try:
+            psnr = compare.peak_signal_noise_ratio(im1, im2, data_range= im2.max() - im2.min())
+        except Exception as e:
+            print(e)
+            
         return mse, nrmse, ssim, psnr
 
     def GammaIndex(self, im1, im2, imageThreshold, distance_threshold, interp_fraction, dose_threshold, lower_dose_cutoff):
