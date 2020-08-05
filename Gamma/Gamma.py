@@ -14,6 +14,7 @@ try:
     from pymedphys import gamma
 except:
     from slicer.util import pip_install
+    #pip_install('dataclasses') # only in --no-deps
     #pip_install('pymedphys --no-deps')
     pip_install('pymedphys')
     from pymedphys import gamma
@@ -99,8 +100,8 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         # distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=20
         self.distanceThreshold = qt.QDoubleSpinBox()
         self.distanceThreshold.setDecimals(1)
-        self.distanceThreshold.setMinimum(0)
-        self.distanceThreshold.setMaximum(10)
+        self.distanceThreshold.setMinimum(0.1)
+        self.distanceThreshold.setMaximum(50)
         self.distanceThreshold.value = 1
         self.distanceThreshold.setToolTip("This is the distance (mm) to do gamma comparisons")
 
@@ -120,7 +121,7 @@ class GammaWidget(ScriptedLoadableModuleWidget):
         self.lowerDoseCutoff = qt.QDoubleSpinBox()
         self.lowerDoseCutoff.setDecimals(1)
         self.lowerDoseCutoff.setMinimum(0.1)
-        self.lowerDoseCutoff.setMaximum(10)
+        self.lowerDoseCutoff.setMaximum(20)
         self.lowerDoseCutoff.value = 1
         self.lowerDoseCutoff.setToolTip("This is the dose cutoff (%) to reject dose values")
 
