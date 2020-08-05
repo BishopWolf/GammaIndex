@@ -317,7 +317,7 @@ class GammaLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.RemoveNode(node)
         
         # prepare clean table
-        resultsTableNode = slicer.mrmlScene.CreateNodeByClass('vtkMRMLTableNode')
+        resultsTableNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTableNode')
         resultsTableNode.RemoveAllColumns()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         nodeID = shNode.GetItemByDataNode(inputVolume1)
