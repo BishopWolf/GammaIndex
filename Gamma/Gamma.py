@@ -317,8 +317,7 @@ class GammaLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.RemoveNode(node)
         
         # prepare clean table
-        resultsTableNode = slicer.mrmlScene.AddNewNodeByClass(
-            'vtkMRMLTableNode')
+        resultsTableNode = slicer.mrmlScene.CreateNodeByClass('vtkMRMLTableNode')
         resultsTableNode.RemoveAllColumns()
         shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
         nodeID = shNode.GetItemByDataNode(inputVolume1)
@@ -429,7 +428,7 @@ class GammaTest(ScriptedLoadableModuleTest):
         values = logic.run(inputVolume, inputVolume, distance_threshold=1, interp_fraction=10, dose_threshold=1, lower_dose_cutoff=1)
         OutputNode = slicer.util.getFirstNodeByClassByName(
             'vtkMRMLScalarVolumeNode', 'Gamma Image')
-        logging.info(str(values))
+        logging.info("%s", values)
 
         self.assertEqual(values["Gamma Index"], 1)
         self.assertEqual(values["Normalized Root MSE (%)"], 0)
