@@ -11,4 +11,5 @@ build-and-test:
     - make
     - Xvfb :99 -screen 0 1024x768x24 &> xvfb.log &
     - cd $CI_BUILDS_DIR/gamma-build
+    - /usr/src/Slicer-build/Slicer-build/bin/PythonSlicer -m pip install --upgrade pip
     - ctest -V
