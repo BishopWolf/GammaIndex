@@ -259,7 +259,7 @@ class GammaLogic(ScriptedLoadableModuleLogic):
         ## Metric 1: MSE (Mean Squared Error)
         mse = compare.mean_squared_error(im1, im2)
         ## Metric 1.1: NRMSE (Normalized Root Mean Squared Error)
-        nrmse = compare.normalized_root_mse(im1, im2)
+        nrmse = compare.normalized_root_mse(im1, im2, normalization='euclidean')
         ## Metric 2: SSIM (Structural Similarity Image Matrix)
         ssim = compare.structural_similarity(im1, im2, data_range= im2.max() - im2.min())
         ## Metric 3: Peak Signal-to-Noise ratio
