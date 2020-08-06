@@ -1,4 +1,5 @@
 import os
+import platform
 import unittest
 import logging
 import vtk
@@ -14,9 +15,11 @@ try:
     from pymedphys import gamma
 except:
     from slicer.util import pip_install
-    #pip_install('dataclasses') # only in --no-deps
-    #pip_install('pymedphys --no-deps')
-    pip_install('pymedphys')
+    if platform.system() == "Darwin":
+        pip_install('dataclasses') # only in --no-deps
+        pip_install('pymedphys --no-deps')
+    else:
+        pip_install('pymedphys')
     from pymedphys import gamma
 
 try:
